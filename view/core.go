@@ -4,8 +4,14 @@ import (
 	"diary/intent"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/app"
 	"fyne.io/fyne/widget"
 )
+
+type App interface {
+	Run(do func())
+	Quit()
+}
 
 type Main struct {
 	out *intent.Handler
@@ -14,10 +20,10 @@ type Main struct {
 
 var size = fyne.NewSize(600, 80)
 
-func SpawnMain(app fyne.App, out *intent.Handler) {
+func SpawnMain(out *intent.Handler) App {
 	m := &Main{
 		out: out,
-		app: app,
+		app: app.New(),
 	}
 
 	//todo - set width and height to be not gross
@@ -33,12 +39,16 @@ func SpawnMain(app fyne.App, out *intent.Handler) {
 
 	w.Show()
 
+	return m
 }
 
-func (m *Main) Submit() (string, func()) {
-	return "Submit", func() {
-		m.out.Publish(intent.Quit{})
-	}
+func (m *Main) Run(do func()) {
+	go do()
+	m.app.Run()
+}
+
+func (m *Main) Quit() {
+	m.app.Quit()
 }
 
 func (m *Main) TextEntry() *widget.Entry {

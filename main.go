@@ -12,9 +12,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
 )
 
 func main() {
@@ -22,16 +19,22 @@ func main() {
 	state := &AppState{
 		SavePath:  getDefaultPath(),
 		Timestamp: time.Now().Unix(),
+		Intents:   intent.NewHandler(),
 	}
 
-	app := app.New()
-	intents := &intent.Handler{
-		App:      app,
-		Delegate: state.delegate,
-	}
+	app := view.SpawnMain(state.Intents)
 
-	intents.Publish(intent.Start{})
-	app.Run()
+	app.Run(func() {
+		for {
+			select {
+			case <-state.Intents.Quit:
+				app.Quit()
+			case content := <-state.Intents.ContentWrite:
+				next := state.write(content)
+				state.Intents.Publish(next)
+			}
+		}
+	})
 }
 
 func getDefaultPath() string {
@@ -50,28 +53,7 @@ func getDefaultPath() string {
 type AppState struct {
 	SavePath  string
 	Timestamp int64
-}
-
-func (a *AppState) delegate(app fyne.App, handler *intent.Handler, process intent.Intent) intent.Intent {
-
-	switch p := process.(type) {
-	case intent.Quit:
-		app.Quit()
-		return intent.None{}
-	case intent.Start:
-		view.SpawnMain(app, handler)
-		return intent.None{}
-	case intent.ContentUpdated:
-		if len(p) >= 2 && p[len(p)-2:] == "\n\n" {
-			return intent.ContentWrite(p)
-		}
-		return intent.None{}
-
-	case intent.ContentWrite:
-		return a.write(string(p))
-	}
-
-	panic(fmt.Sprintf("UNKNOWN INTENT %T", process))
+	Intents   *intent.Handler
 }
 
 func (a *AppState) write(content string) intent.Intent {

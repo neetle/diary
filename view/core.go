@@ -30,9 +30,18 @@ func SpawnMain(out *intent.Handler) App {
 	w := m.app.NewWindow("Diary")
 	w.RequestFocus()
 
+	textEntry := m.TextEntry()
+
 	w.SetContent(widget.NewVBox(
-		m.TextEntry(),
+		textEntry,
 	))
+
+	w.Canvas().SetOnTypedRune(func(r rune) {
+		textEntry.TypedRune(r)
+	})
+	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+		textEntry.TypedKey(ev)
+	})
 
 	w.Resize(size)
 	w.CenterOnScreen()

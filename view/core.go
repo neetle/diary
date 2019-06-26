@@ -36,12 +36,7 @@ func SpawnMain(out *intent.Handler) App {
 		textEntry,
 	))
 
-	w.Canvas().SetOnTypedRune(func(r rune) {
-		textEntry.TypedRune(r)
-	})
-	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
-		textEntry.TypedKey(ev)
-	})
+	w.Canvas().Focus(textEntry)
 
 	w.Resize(size)
 	w.CenterOnScreen()

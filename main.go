@@ -6,6 +6,7 @@ import (
 	"diary/view"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 	"path"
@@ -15,6 +16,22 @@ import (
 )
 
 func main() {
+	file, err := os.OpenFile(getDefaultLogPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	log.SetOutput(file)
+	log.Println("starting up")
+
+	defer func() {
+		log.Println("finished")
+		if e := recover(); e != nil {
+			log.Println(e)
+		}
+	}()
+
 	// todo: derive from config
 	state := &AppState{
 		SavePath:  getDefaultPath(),
@@ -25,16 +42,27 @@ func main() {
 	app := view.SpawnMain(state.Intents)
 
 	app.Run(func() {
-		for {
-			select {
-			case <-state.Intents.Quit:
-				app.Quit()
-			case content := <-state.Intents.ContentWrite:
-				next := state.write(content)
-				state.Intents.Publish(next)
-			}
+		select {
+		case <-state.Intents.Quit:
+		case content := <-state.Intents.ContentWrite:
+			state.write(content)
 		}
+	
+		app.Quit()
 	})
+}
+
+func getDefaultLogPath() string {
+	user, err := user.Current()
+	if err != nil {
+		panic("couldn't get current user - " + err.Error())
+	}
+
+	return path.Join(
+		user.HomeDir,
+		"notes",
+		"diary.log",
+	)
 }
 
 func getDefaultPath() string {

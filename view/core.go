@@ -3,6 +3,8 @@ package view
 import (
 	"diary/intent"
 
+	"diary/hotkey"
+
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/widget"
@@ -42,6 +44,15 @@ func SpawnMain(out *intent.Handler) App {
 	w.CenterOnScreen()
 
 	w.Show()
+
+	err := hotkey.Register(1, func() {
+		w.RequestFocus()
+	})
+
+	if err != nil {
+		textEntry.SetText(err.Error())
+		textEntry.SetReadOnly(true)
+	}
 
 	return m
 }
